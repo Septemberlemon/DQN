@@ -1,6 +1,7 @@
 **DQN**旨在利用神经网络替代**q-learning**中的**q-table**
 
 在每一集（**episode**）的每一步（**step**）中，利用网络进行**ε-greedy**决策，收集此步中产生的五元组：
+
 $$
 (state,\,action,\,reward,\,next\_state,\,done)
 $$
