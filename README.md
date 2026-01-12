@@ -2,7 +2,7 @@
 
 在每一集（**episode**）的每一步（**step**）中，利用网络进行**ε-greedy**决策，收集此步中产生的五元组：
 $$
-(state,\ action,\ reward,\ next\_state,\ done)
+(state,\,action,\,reward,\,next\_state,\,done)
 $$
 放进**经验池**中
 
@@ -18,29 +18,29 @@ $$
 
 ***
 
-对一条经验进行学习，也采用时序差分的方法，即让**网络对于状态s下在action处的q值估计**（记为 $Q_{s,\ action}$）要靠近 $td\_target$，而 $td\_target$ 等于：
+对一条经验进行学习，也采用时序差分的方法，即让**网络对于状态s下在action处的q值估计**（记为 $Q_{s,\,action}$）要靠近 $td\_target$，而 $td\_target$ 等于：
 $$
-reward\ +\ \gamma\ *\ max\_q\_of\_next\_state
+reward\,+\,\gamma\,*\,max\_q\_of\_next\_state
 $$
 $max\_q\_of\_next\_state$ 则代表下一状态的在所有**action**的**q值**中的最大值，这与**q-learning**中是一样的
 
 二者差值被称为：
 $$
-td\_error\ =\ |Q_{s,\ action}\ -\ td\_target|
+td\_error\,=\,|Q_{s,\,action}\,-\,td\_target|
 $$
 这里采用的绝对值，当然也可以采用其他函数计算差值
 
 如果直接用 $td\_error$ 作为**loss**进行反向传播，会出现**loss**收敛，但是实际毫无长进的问题，这是因为：
 $$
-td\_error\ =\ |Q_{s,\ action}\ -\ \gamma\ *\ max\_q\_of\_next\_state\ -\ reward|
+td\_error\,=\,|Q_{s,\,action}\,-\,\gamma\,*\,max\_q\_of\_next\_state\,-\,reward|
 $$
 
 
-$Q_{s,\ action}$ 和 $max\_q\_of\_next\_state$ 都是基于同一个网络计算的，模型会同时调整二者，以**让上述式子的值尽量小**，但这并不等价于 **$Q_{s,\ action}$ 更加靠近$td\_target$**，我们希望调整的是 $Q_{s,\ action}$，让它靠近 $td\_target$，而现在我们做的是同时调整二者让二者之差接近，这不是一回事：$Q_{s,\ action}$ 完全可以远离 $td\_target$ 而不是靠近，只要 $td\_target$ 也远离自己原本的值并且向着 $Q_{s,\ action}$ 更新后的值靠近以满足**二者更新后的距离小于之前的距离**，二者仍然在靠近。
+$Q_{s,\,action}$ 和 $max\_q\_of\_next\_state$ 都是基于同一个网络计算的，模型会同时调整二者，以**让上述式子的值尽量小**，但这并不等价于 **$Q_{s,\,action}$ 更加靠近$td\_target$**，我们希望调整的是 $Q_{s,\,action}$，让它靠近 $td\_target$，而现在我们做的是同时调整二者让二者之差接近，这不是一回事：$Q_{s,\,action}$ 完全可以远离 $td\_target$ 而不是靠近，只要 $td\_target$ 也远离自己原本的值并且向着 $Q_{s,\,action}$ 更新后的值靠近以满足**二者更新后的距离小于之前的距离**，二者仍然在靠近。
 
-那将 $td\_target$ **detach** 掉行不行呢，即不让它参与反向传播，这样 $Q_{s,\ action}$ 就一定向着 $td\_target$ 靠近了，但这会有另一个问题：
+那将 $td\_target$ **detach** 掉行不行呢，即不让它参与反向传播，这样 $Q_{s,\,action}$ 就一定向着 $td\_target$ 靠近了，但这会有另一个问题：
 
-在网络更新前，这二者的值都是靠它算出来的，在网络更新后，$Q_{s,\ action}$ 的确更靠近之前网络对于 $td\_target$ 的输出，但是（经验池里存的只是状态，**q** 值还是基于网络计算）在网络参数更新后，经验池里的所有经验在网络看来，$max\_q\_of\_next\_state$ 已经不一样了，在下一步中，它就会向着新的 $td\_target$ 学习了，而这个新的 $td\_target$ 上一步中刚受到了不确定的扰动，是极不稳定的
+在网络更新前，这二者的值都是靠它算出来的，在网络更新后，$Q_{s,\,action}$ 的确更靠近之前网络对于 $td\_target$ 的输出，但是（经验池里存的只是状态，**q** 值还是基于网络计算）在网络参数更新后，经验池里的所有经验在网络看来，$max\_q\_of\_next\_state$ 已经不一样了，在下一步中，它就会向着新的 $td\_target$ 学习了，而这个新的 $td\_target$ 上一步中刚受到了不确定的扰动，是极不稳定的
 
 一种直接的想法是固定住当前网络对于 $next\_state$ 的看法，然后基于记录的值**多更新几次**对于当前状态的看法，使它尽量**学会**对当前状态的看法要接近 $td\_target$，而要记录当前网络对于 $next\_state$ 的看法，就需要将网络整个记录下来，这就引入了：
 
