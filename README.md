@@ -3,7 +3,7 @@
 在每一集（**episode**）的每一步（**step**）中，利用网络进行**ε-greedy**决策，收集此步中产生的五元组：
 
 $$
-(\texttt{state}, \ \texttt{action}, \ \texttt{reward}, \ \texttt{next\\_state}, \ \texttt{done})
+(\text{state},\,\text{action},\,\text{reward},\,\text{next\_state},\,\text{done})
 $$
 
 放进**经验池**中
@@ -20,46 +20,58 @@ $$
 
 ***
 
-对一条经验进行学习，也采用时序差分的方法，即让**网络对于状态s下在action处的q值估计**（记为 $Q_{s, \texttt{action}}$）要靠近 $\texttt{td\\_target}$，而 $\texttt{td\\_target}$ 等于：
+对一条经验进行学习，也采用时序差分的方法，即让**网络对于状态s下在action处的q值估计**（暂记为 $Q_{s,\text{action}}$）要靠近 $\text{td\_target}$，而 $\text{td\_target}$ 等于：
 
 $$
-\texttt{reward} + \gamma * \texttt{max\\_q\\_of\\_next\\_state}
+\text{reward} + \gamma * \text{max\_q\_of\_next\_state}
 $$
 
-$\texttt{max\\_q\\_of\\_next\\_state}$ 则代表下一状态的在所有**action**的**q值**中的最大值，这与**q-learning**中是一样的
+$\text{max\_q\_of\_next\_state}$ 则代表下一状态的在所有**action**的**q值**中的最大值，这与**q-learning**中是一样的
 
 二者差值被称为：
 
 $$
-\texttt{td\\_error} = |Q_{s, \texttt{action}} - \texttt{td\\_target}|
+\text{td\_error} = |Q_{s,\text{action}} - \text{td\_target}|
 $$
 
 这里采用的绝对值，当然也可以采用其他函数计算差值
 
-如果直接用 $\texttt{td\\_error}$ 作为**loss**进行反向传播，会出现**loss**收敛，但是实际毫无长进的问题，这是因为：
+如果直接用 $\text{td\_error}$ 作为**loss**进行反向传播，会出现**loss**收敛，但是实际毫无长进的问题，这是因为：
 
 $$
-\texttt{td\\_error} = |Q_{s, \texttt{action}} - (\gamma * \texttt{max\\_q\\_of\\_next\\_state} + \texttt{reward})|
+\text{td\_error} = |Q_{s, \text{action}} - (\gamma * \text{max\_q\_of\_next\_state} + \text{reward})|
 $$
 
-$Q_{s, \texttt{action}}$ 和 $\texttt{max\\_q\\_of\\_next\\_state}$ 都是基于同一个网络计算的，模型会同时调整二者，以**让上述式子的值尽量小**，但这并不等价于 $Q_{s, \texttt{action}}$ **更加靠近** $\texttt{td\\_target}$，我们希望调整的是 $Q_{s, \texttt{action}}$，让它靠近 $\texttt{td\\_target}$，而现在我们做的是同时调整二者让二者之差接近，这不是一回事：$Q_{s, \texttt{action}}$ 完全可以远离 $\texttt{td\\_target}$ 而不是靠近，只要 $\texttt{td\\_target}$ 也远离自己原本的值并且向着 $Q_{s, \texttt{action}}$ 更新后的值靠近以满足**二者更新后的距离小于之前的距离**，二者仍然在靠近。
+$Q_{s,\text{action}}$ 和 $\text{max\_q\_of\_next\_state}$ 都是基于同一个网络计算的，模型会同时调整二者，以**让上述式子的值尽量小**，但这并不等价于 $Q_{s,\text{action}}$ **更加靠近** $\text{td\_target}$，我们希望调整的是 $Q_{s, \texttt{action}}$，让它靠近 $\text{td\_target}$，而现在我们做的是同时调整二者让二者之差接近，这不是一回事：$Q_{s, \text{action}}$ 完全可以远离 $\text{td\_target}$ 而不是靠近，只要 $\text{td\_target}$ 也远离自己原本的值并且向着 $Q_{s, \text{action}}$ 更新后的值靠近以满足**二者更新后的距离小于之前的距离**，二者仍然在靠近。
 
-那将 $\texttt{td\\_target}$ **detach** 掉行不行呢，即不让它参与反向传播，这样 $Q_{s, \texttt{action}}$ 就一定向着 $\texttt{td\\_target}$ 靠近了，但这会有另一个问题：
+那将 $\text{td\_target}$ **detach** 掉行不行呢，即不让它参与反向传播，这样 $Q_{s,\text{action}}$ 就一定向着 $\text{td\_target}$ 靠近了，但这会有另一个问题：
 
-在网络更新前，这二者的值都是靠它算出来的，在网络更新后，$Q_{s, \texttt{action}}$ 的确更靠近之前网络对于 $\texttt{td\\_target}$ 的输出，但是（经验池里存的只是状态，**q** 值还是基于网络计算）在网络参数更新后，经验池里的所有经验在网络看来，$\texttt{max\\_q\\_of\\_next\\_state}$ 已经不一样了，在下一步中，它就会向着新的 $\texttt{td\\_target}$ 学习了，而这个新的 $\texttt{td\\_target}$ 上一步中刚受到了不确定的扰动，是极不稳定的
+在网络更新前，这二者的值都是靠它算出来的，在网络更新后，$Q_{s, \text{action}}$ 的确更靠近之前网络对于 $\text{td\_target}$ 的输出，但是（经验池里存的只是状态，**q** 值还是基于网络计算）在网络参数更新后，经验池里的所有经验在网络看来，$\text{max\_q\_of\_next\_state}$ 已经不一样了，在下一步中，它就会向着新的 $\text{td\_target}$ 学习了，而这个新的 $\text{td\_target}$ 上一步中刚受到了不确定的扰动，是极不稳定的
 
-一种直接的想法是固定住当前网络对于 $\texttt{next\\_state}$ 的看法，然后基于记录的值**多更新几次**对于当前状态的看法，使它尽量**学会**对当前状态的看法要接近 $\texttt{td\\_target}$，而要记录当前网络对于 $\texttt{next\\_state}$ 的看法，就需要将网络整个记录下来，这就引入了：
+一种直接的想法是固定住当前网络对于 $\text{next\_state}$ 的看法，然后基于记录的值**多更新几次**对于当前状态的看法，使它尽量**学会**对当前状态的看法要接近 $\text{td\_target}$，而要记录当前网络对于 $\text{next\_state}$ 的看法，就需要将网络整个记录下来，这就引入了：
 
 #### 两个网络
 
 我们完整的复制此刻的网络，在下一步中，多采样学习几次，以求达成前面提到过的效果
 
-但是要注意，复制下来的网络对于 $\texttt{next\\_state}$ 的看法其实也是估值，所以完全学习基于这个估值的 $\texttt{td\\_target}$ 其实是非必要的，它只是部分的真理，在训练的早期甚至可能带有巨大的偏见，所以更合理的做法是一边学习一边往经验池里增添新经验
+但是要注意，复制下来的网络对于 $\text{next\_state}$ 的看法其实也是估值，所以完全学习基于这个估值的 $\text{td\_target}$ 其实是非必要的，它只是部分的真理，在训练的早期甚至可能带有巨大的偏见，所以更合理的做法是一边学习一边往经验池里增添新经验
 
-整理一下，目前我们在做的是：记录此刻的网络，依赖它提供对于 $\texttt{next\\_state}$ 的看法，然后一边学习一边往经验池增添经验，这其实就是标准**DQN**的做法
+整理一下，目前我们在做的是：记录此刻的网络，依赖它提供对于 $\text{next\_state}$ 的看法，然后一边学习一边往经验池增添经验，这其实就是标准**DQN**的做法
 
-增添经验需要真正走一步出去，所以实际上采样学习也随之分散在多步中，例如走一步增添一条经验，基于记录的网络得出的 $\texttt{td\\_target}$ 采样学习一次
+增添经验需要真正走一步出去，所以实际上采样学习也随之分散在多步中，例如走一步增添一条经验，基于记录的网络得出的 $\text{td\_target}$ 采样学习一次
 
-在此过程中实际上相当于用一个滞后的旧网络做监督学习，每若干步后同步当前网络到旧网络，这个旧网络因为被用来求 $\texttt{td\\_target}$ ，所以被称为 **target network**
+在此过程中实际上相当于用一个滞后的旧网络做监督学习，每若干步后同步当前网络到旧网络，这个旧网络因为被用来求 $\text{td\_target}$ ，所以被称为 **target network**
 
 如果每一步都更新 **target network**，其实就相当于 **detach** 的方案
+
+***
+
+## 调参经验
+
+经验池一定要够大，足够放下足够丰富的样本
+
+**batch_size**选小一些，否则收敛慢
+
+探索率衰减慢一些，这样虽然前期收敛慢，但是后期收敛稳
+
+**灾难性遗忘**的原因就在于经验池里都是相似的数据，例如全部是跑满的数据，这可以通过在经验池里满分数据过多的情况下控制新产生的满分数据往经验池增添的速率来一定程度上解决

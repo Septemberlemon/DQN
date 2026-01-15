@@ -4,7 +4,7 @@ from model import DQN  # 确保 model.py 在同一目录下
 
 
 # 配置
-model_path = "checkpoints/test3.pth"  # 你训练保存的路径
+model_path = "checkpoints/test44.pth"  # 你训练保存的路径
 video_folder = "videos"  # 视频保存目录
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -25,7 +25,7 @@ model.eval()  # 切换到评估模式（虽然DQN只有全连接层影响不大�
 
 print("Start recording...", flush=True)
 
-# 跑 3 个 episode 看看效果
+# 跑 10 个 episode 看看效果
 for ep in range(10):
     obs, info = env.reset()
     done = False
